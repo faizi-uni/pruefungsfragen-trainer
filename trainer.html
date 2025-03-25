@@ -28,13 +28,13 @@
     let daten = [];
     let aktuelleFrage = null;
 
-    // JSON laden
-    fetch('fragen.json')
-      .then(response => response.json())
-      .then(json => {
-        daten = json;
-        naechsteFrage();
-      });
+  // JSON laden
+  fetch('fragen_2024.json')  <!-- HIER geändert -->
+    .then(response => response.json())
+    .then(json => {
+      daten = json;
+      naechsteFrage();
+    });
 
     function naechsteFrage() {
       const index = Math.floor(Math.random() * daten.length);
