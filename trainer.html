@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Fragen-Trainer</title>
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; padding: 2rem; }
+    .container { max-width: 700px; margin: auto; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .info { color: #777; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .frage { font-size: 1.2rem; font-weight: bold; margin: 1rem 0; }
+    .antwort { margin: 1rem 0; background: #eef; padding: 1rem; border-radius: 5px; display: none; }
+    button { padding: 0.5rem 1rem; margin-top: 1rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎓 Prüfungsfragen-Trainer</h1>
+    <div id="fragenfeld">
+      <div class="info" id="meta"></div>
+      <div class="frage" id="frage">Lade Frage...</div>
+      <div class="antwort" id="antwort"></div>
+      <button onclick="zeigeAntwort()">Antwort anzeigen</button>
+      <button onclick="naechsteFrage()">Nächste Frage</button>
+    </div>
+  </div>
+
+  <script>
+    let daten = [];
+    let aktuelleFrage = null;
+
+    // JSON laden
+    fetch('fragen.json')
+      .then(response => response.json())
+      .then(json => {
+        daten = json;
+        naechsteFrage();
+      });
+
+    function naechsteFrage() {
+      const index = Math.floor(Math.random() * daten.length);
+      aktuelleFrage = daten[index];
+
+      document.getElementById('frage').textContent = aktuelleFrage.frage;
+      document.getElementById('antwort').style.display = 'none';
+      document.getElementById('antwort').textContent = aktuelleFrage.antwort;
+
+      document.getElementById('meta').textContent = `${aktuelleFrage.fach} | ${aktuelleFrage.pruefer} | ${aktuelleFrage.jahr}`;
+    }
+
+    function zeigeAntwort() {
+      document.getElementById('antwort').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
