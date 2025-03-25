@@ -1,0 +1,68 @@
+[
+  {
+    "jahr": 2024,
+    "datum": "09.10.2024",
+    "fach": "Allgemeine Rechts- und Verwaltungsgrundlagen",
+    "pruefer": "Harald Toppe",
+    "themengebiet": "Staatsrecht / EU-Recht",
+    "frage": "Was ist der Unterschied zwischen Bundesrat und EU-Ministerrat?",
+    "antwort": "Der Bundesrat ist ein Verfassungsorgan der Bundesrepublik Deutschland, während der EU-Ministerrat ein Organ der Europäischen Union ist. Beide vertreten die Regierungen ihrer Mitglieder.",
+    "art": "Fachfrage",
+    "quelle": "Protokoll Oktober 2024"
+  },
+  {
+    "jahr": 2024,
+    "datum": "09.10.2024",
+    "fach": "Allgemeine Rechts- und Verwaltungsgrundlagen",
+    "pruefer": "Harald Toppe",
+    "themengebiet": "Verwaltungsrecht",
+    "frage": "Was sind die Merkmale eines Verwaltungsakts?",
+    "antwort": "Ein Verwaltungsakt ist eine hoheitliche Maßnahme einer Behörde auf dem Gebiet des öffentlichen Rechts zur Regelung eines Einzelfalls mit Außenwirkung.",
+    "art": "Fachfrage",
+    "quelle": "Protokoll Oktober 2024"
+  },
+  {
+    "jahr": 2024,
+    "datum": "09.10.2024",
+    "fach": "Führungsaufgaben und Wirtschaftlichkeit",
+    "pruefer": "Dirk Balser",
+    "themengebiet": "Führung",
+    "frage": "Welche Führungsstile gibt es und was ist der situative Führungsstil?",
+    "antwort": "Führungsstile umfassen autoritär, kooperativ, partizipativ. Der situative Stil passt sich an die Reife der Mitarbeitenden an.",
+    "art": "Fachfrage",
+    "quelle": "Protokoll Oktober 2024"
+  },
+  {
+    "jahr": 2024,
+    "datum": "09.10.2024",
+    "fach": "Führungsaufgaben und Wirtschaftlichkeit",
+    "pruefer": "Dirk Balser",
+    "themengebiet": "Kommunikation",
+    "frage": "Was ist das Vier-Seiten-Modell nach Schulz von Thun?",
+    "antwort": "Es beschreibt, dass jede Nachricht vier Ebenen hat: Sachebene, Selbstoffenbarung, Beziehung und Appell.",
+    "art": "Fachfrage",
+    "quelle": "Protokoll Oktober 2024"
+  },
+  {
+    "jahr": 2024,
+    "datum": "27.03.2024",
+    "fach": "Öffentliches Baurecht",
+    "pruefer": "Sandra Matzenauer",
+    "themengebiet": "Bauplanungsrecht",
+    "frage": "Was ist der Unterschied zwischen §34 und §35 BauGB?",
+    "antwort": "§34 gilt für den unbeplanten Innenbereich, §35 für den Außenbereich. Die Zulässigkeitsvoraussetzungen unterscheiden sich stark.",
+    "art": "Fachfrage",
+    "quelle": "Protokoll Oktober 2024"
+  },
+  {
+    "jahr": 2024,
+    "datum": "27.03.2024",
+    "fach": "Öffentliches Baurecht",
+    "pruefer": "Sandra Matzenauer",
+    "themengebiet": "Bauordnungsrecht",
+    "frage": "Welche Anforderungen gelten an Abstandsflächen?",
+    "antwort": "Abstandsflächen regeln den Abstand von Gebäuden zur Grundstücksgrenze und sind in der HBO definiert.",
+    "art": "Fachfrage",
+    "quelle": "Protokoll Oktober 2024"
+  }
+]
