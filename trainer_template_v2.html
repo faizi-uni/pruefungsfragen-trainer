@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Prüfungsfragen-Trainer</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 2rem;
+      color: #212529;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.05);
+      padding: 2rem;
+    }
+    h1 {
+      margin-bottom: 1.5rem;
+      font-size: 1.8rem;
+    }
+    select, button {
+      font-size: 1rem;
+      padding: 0.5rem;
+      margin: 0.5rem 0.5rem 1rem 0;
+      border-radius: 0.5rem;
+      border: 1px solid #ced4da;
+    }
+    button {
+      background-color: #343a40;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #495057;
+    }
+    .frage-block {
+      background: #f1f3f5;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+    .antwort-block {
+      background: #e9ecef;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-top: 1rem;
+      display: none;
+    }
+    .info {
+      font-size: 0.9rem;
+      color: #6c757d;
+      margin-top: 1rem;
+    }
+    .progress {
+      text-align: right;
+      font-size: 0.9rem;
+      margin-top: -1rem;
+      margin-bottom: 1rem;
+      color: #868e96;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Prüfungsfragen-Trainer</h1>
+
+  <label>Jahr:
+    <select id="jahrFilter"></select>
+  </label>
+  <label>Fach:
+    <select id="fachFilter"></select>
+  </label>
+  <label>Prüfer*in:
+    <select id="prueferFilter"></select>
+  </label>
+
+  <div class="progress" id="fortschritt"></div>
+
+  <div class="frage-block">
+    <div id="frageText"></div>
+    <button onclick="zeigeAntwort()">Antwort anzeigen</button>
+    <div class="antwort-block" id="antwortText"></div>
+    <div class="antwort-block" id="altAntwortText"></div>
+    <div class="info">
+      <div><strong>Fach:</strong> <span id="infoFach"></span></div>
+      <div><strong>Prüfer*in:</strong> <span id="infoPruefer"></span></div>
+      <div><strong>Jahr:</strong> <span id="infoJahr"></span></div>
+      <div><strong>Atmosphäre:</strong> <span id="infoAtmosphaere"></span></div>
+    </div>
+  </div>
+
+  <button onclick="naechsteFrage()">Nächste Frage</button>
+</div>
+
+<script>
+let daten = [];
+let gefiltert = [];
+let index = 0;
+
+fetch('pruefungsfragen_datenbank_2021_2024.json')
+  .then(response => response.json())
+  .then(json => {
+    daten = json;
+    fuelleFilter();
+    filterAnwenden();
+  });
+
+function fuelleFilter() {
+  const jahrSet = new Set(daten.map(e => e.jahr));
+  const fachSet = new Set(daten.map(e => e.fach));
+  const prueferSet = new Set(daten.map(e => e.pruefer));
+
+  const jahrSel = document.getElementById("jahrFilter");
+  const fachSel = document.getElementById("fachFilter");
+  const prueferSel = document.getElementById("prueferFilter");
+
+  [jahrSel, fachSel, prueferSel].forEach(sel => sel.innerHTML = '<option value="">-- alle --</option>');
+  jahrSet.forEach(j => jahrSel.innerHTML += `<option>${j}</option>`);
+  fachSet.forEach(f => fachSel.innerHTML += `<option>${f}</option>`);
+  prueferSet.forEach(p => prueferSel.innerHTML += `<option>${p}</option>`);
+
+  jahrSel.onchange = fachSel.onchange = prueferSel.onchange = filterAnwenden;
+}
+
+function filterAnwenden() {
+  const jahr = document.getElementById("jahrFilter").value;
+  const fach = document.getElementById("fachFilter").value;
+  const pruefer = document.getElementById("prueferFilter").value;
+
+  gefiltert = daten.filter(e =>
+    (!jahr || e.jahr == jahr) &&
+    (!fach || e.fach === fach) &&
+    (!pruefer || e.pruefer === pruefer)
+  );
+
+  index = 0;
+  naechsteFrage();
+}
+
+function zeigeAntwort() {
+  document.getElementById("antwortText").style.display = 'block';
+  document.getElementById("altAntwortText").style.display = 'block';
+}
+
+function naechsteFrage() {
+  if (gefiltert.length === 0) {
+    document.getElementById("frageText").textContent = "Keine Fragen gefunden.";
+    document.getElementById("antwortText").style.display = 'none';
+    document.getElementById("altAntwortText").style.display = 'none';
+    document.getElementById("fortschritt").textContent = "";
+    return;
+  }
+
+  const frage = gefiltert[index];
+  document.getElementById("frageText").textContent = frage.frage;
+  document.getElementById("antwortText").textContent = "Antwort: " + frage.antwort;
+  document.getElementById("altAntwortText").textContent = "Alternative Antwort: " + frage.alternative_antwort;
+  document.getElementById("antwortText").style.display = 'none';
+  document.getElementById("altAntwortText").style.display = 'none';
+
+  document.getElementById("infoFach").textContent = frage.fach;
+  document.getElementById("infoPruefer").textContent = frage.pruefer;
+  document.getElementById("infoJahr").textContent = frage.jahr + " – " + frage.monat;
+  document.getElementById("infoAtmosphaere").textContent = frage.atmosphaere;
+  document.getElementById("fortschritt").textContent = `Frage ${index + 1} von ${gefiltert.length}`;
+
+  index = (index + 1) % gefiltert.length;
+}
+</script>
+</body>
+</html>
