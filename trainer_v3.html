@@ -109,13 +109,19 @@
   <h1>Prüfungsfragen-Trainer <button class="toggle-darkmode" onclick="toggleDarkMode()">🌙 Dark Mode</button></h1>
 
   <label>Fach:
-    <select id="fachFilter" onchange="filterFach()"></select>
+    <select id="fachFilter">
+      <option value="">Alle Fächer</option>
+    </select>
   </label>
   <label>Jahr:
-    <select id="jahrFilter" onchange="filterJahr()"></select>
+    <select id="jahrFilter">
+      <option value="">Alle Jahre</option>
+    </select>
   </label>
   <label>Prüfer*in:
-    <select id="prueferFilter" onchange="filterPruefer()"></select>
+    <select id="prueferFilter">
+      <option value="">Alle Prüfer*innen</option>
+    </select>
   </label>
 
   <button class="zufalls-btn" onclick="zufallsFrage(true)">🎲 Zufallsfrage anzeigen</button>
@@ -144,5 +150,6 @@ function toggleDarkMode() {
   dark = !dark;
 }
 </script>
+<script src="trainer-logic.js"></script>
 </body>
 </html>
