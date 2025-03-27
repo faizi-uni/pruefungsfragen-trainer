@@ -10,6 +10,11 @@
       margin: 0;
       padding: 2rem;
       color: #212529;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+      background: #212529;
+      color: #f8f9fa;
     }
     .container {
       max-width: 800px;
@@ -18,6 +23,9 @@
       border-radius: 1rem;
       box-shadow: 0 5px 25px rgba(0, 0, 0, 0.05);
       padding: 2rem;
+    }
+    body.dark .container {
+      background: #343a40;
     }
     h1 {
       margin-bottom: 1.5rem;
@@ -45,12 +53,18 @@
       padding: 1.5rem;
       margin-top: 1rem;
     }
+    body.dark .frage-block {
+      background: #495057;
+    }
     .antwort-block {
       background: #e9ecef;
       border-radius: 0.75rem;
       padding: 1rem;
       margin-top: 1rem;
       display: none;
+    }
+    body.dark .antwort-block {
+      background: #6c757d;
     }
     .info {
       font-size: 0.9rem;
@@ -64,21 +78,36 @@
       margin-bottom: 1rem;
       color: #868e96;
     }
+    #verlaufBox {
+      font-size: 0.9rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #dee2e6;
+    }
+    .toggle-darkmode {
+      float: right;
+      font-size: 0.8rem;
+      background: none;
+      border: none;
+      color: #007bff;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 <div class="container">
-  <h1>Prüfungsfragen-Trainer</h1>
+  <h1>Prüfungsfragen-Trainer <button class="toggle-darkmode" onclick="toggleDarkMode()">🌙 Dark Mode</button></h1>
 
+  <label>Fach:
+    <select id="fachFilter" onchange="filterFach()"></select>
+  </label>
   <label>Jahr:
     <select id="jahrFilter" onchange="filterJahr()"></select>
   </label>
   <label>Prüfer*in:
     <select id="prueferFilter" onchange="filterPruefer()"></select>
   </label>
-  <label>Fach:
-    <select id="fachFilter" onchange="filterFach()"></select>
-  </label>
+  <button onclick="zufallsFrage(true)">🎲 Zufallsfrage</button>
 
   <div class="progress" id="fortschritt"></div>
 
@@ -94,6 +123,8 @@
       <div><strong>Atmosphäre:</strong> <span id="infoAtmosphaere"></span></div>
     </div>
   </div>
+
+  <div id="verlaufBox"></div>
 </div>
 
 <script>
@@ -101,52 +132,53 @@ let daten = [];
 let gefiltert = [];
 let jahrGefiltert = [];
 let prueferGefiltert = [];
+let fachGefiltert = [];
+let bereitsGezeigt = new Set();
 
 fetch('pruefungsfragen_datenbank_2021_2024.json')
   .then(response => response.json())
   .then(json => {
     daten = json;
-    fuelleJahrFilter();
-    filterJahr();
+    fuelleFachFilter();
+    filterFach();
   });
 
-function fuelleJahrFilter() {
-  const jahre = [...new Set(daten.map(e => e.jahr))];
+function fuelleFachFilter() {
+  const fachs = [...new Set(daten.map(e => e.fach))];
+  const fachSel = document.getElementById("fachFilter");
+  fachSel.innerHTML = '<option value="">-- wählen --</option>';
+  fachs.sort().forEach(f => fachSel.innerHTML += `<option>${f}</option>`);
+}
+
+function filterFach() {
+  const fach = document.getElementById("fachFilter").value;
+  fachGefiltert = daten.filter(e => !fach || e.fach === fach);
+
+  const jahre = [...new Set(fachGefiltert.map(e => e.jahr))];
   const jahrSel = document.getElementById("jahrFilter");
   jahrSel.innerHTML = '<option value="">-- wählen --</option>';
   jahre.sort().forEach(j => jahrSel.innerHTML += `<option>${j}</option>`);
+
+  gefiltert = [];
+  zeigeFrage();
 }
 
 function filterJahr() {
   const jahr = document.getElementById("jahrFilter").value;
-  jahrGefiltert = daten.filter(e => !jahr || e.jahr == jahr);
+  jahrGefiltert = fachGefiltert.filter(e => !jahr || e.jahr == jahr);
 
   const prueferSet = [...new Set(jahrGefiltert.map(e => e.pruefer))];
   const prueferSel = document.getElementById("prueferFilter");
   prueferSel.innerHTML = '<option value="">-- wählen --</option>';
   prueferSet.sort().forEach(p => prueferSel.innerHTML += `<option>${p}</option>`);
 
-  document.getElementById("fachFilter").innerHTML = '<option value="">-- wählen --</option>';
   gefiltert = [];
   zeigeFrage();
 }
 
 function filterPruefer() {
   const pruefer = document.getElementById("prueferFilter").value;
-  prueferGefiltert = jahrGefiltert.filter(e => !pruefer || e.pruefer === pruefer);
-
-  const fachSet = [...new Set(prueferGefiltert.map(e => e.fach))];
-  const fachSel = document.getElementById("fachFilter");
-  fachSel.innerHTML = '<option value="">-- wählen --</option>';
-  fachSet.sort().forEach(f => fachSel.innerHTML += `<option>${f}</option>`);
-
-  gefiltert = [];
-  zeigeFrage();
-}
-
-function filterFach() {
-  const fach = document.getElementById("fachFilter").value;
-  gefiltert = prueferGefiltert.filter(e => !fach || e.fach === fach);
+  gefiltert = jahrGefiltert.filter(e => !pruefer || e.pruefer === pruefer);
   zeigeFrage();
 }
 
@@ -155,13 +187,13 @@ function zeigeAntwort() {
   document.getElementById("altAntwortText").style.display = 'block';
 }
 
-function zeigeFrage() {
+function zeigeFrage(frage = null) {
   const frageBox = document.getElementById("frageText");
   const antwortBox = document.getElementById("antwortText");
   const altAntwortBox = document.getElementById("altAntwortText");
   const fortschrittBox = document.getElementById("fortschritt");
 
-  if (gefiltert.length === 0) {
+  if (!frage && gefiltert.length === 0) {
     frageBox.textContent = "Bitte Filter vollständig setzen.";
     antwortBox.style.display = 'none';
     altAntwortBox.style.display = 'none';
@@ -169,7 +201,14 @@ function zeigeFrage() {
     return;
   }
 
-  const frage = gefiltert[Math.floor(Math.random() * gefiltert.length)];
+  if (!frage) {
+    let versuche = 0;
+    do {
+      frage = gefiltert[Math.floor(Math.random() * gefiltert.length)];
+      versuche++;
+    } while (bereitsGezeigt.has(frage.frage) && versuche < 100);
+  }
+
   frageBox.textContent = frage.frage;
   antwortBox.textContent = "Antwort: " + frage.antwort;
   altAntwortBox.textContent = "Alternative Antwort: " + frage.alternative_antwort;
@@ -181,7 +220,33 @@ function zeigeFrage() {
   document.getElementById("infoJahr").textContent = frage.jahr + " – " + frage.monat;
   document.getElementById("infoAtmosphaere").textContent = frage.atmosphaere;
 
-  fortschrittBox.textContent = `Zufällige Frage aus ${gefiltert.length} Einträgen`;
+  bereitsGezeigt.add(frage.frage);
+  fortschrittBox.textContent = `${bereitsGezeigt.size} von ${gefiltert.length} Fragen angezeigt.`;
+
+  document.getElementById("verlaufBox").innerHTML = `Gesehene Fragen: ${bereitsGezeigt.size}`;
+}
+
+function zufallsFrage(updateFilter = false) {
+  const frage = daten[Math.floor(Math.random() * daten.length)];
+  if (updateFilter) {
+    document.getElementById("fachFilter").value = frage.fach;
+    filterFach();
+    setTimeout(() => {
+      document.getElementById("jahrFilter").value = frage.jahr;
+      filterJahr();
+      setTimeout(() => {
+        document.getElementById("prueferFilter").value = frage.pruefer;
+        filterPruefer();
+        zeigeFrage(frage);
+      }, 100);
+    }, 100);
+  } else {
+    zeigeFrage(frage);
+  }
+}
+
+function toggleDarkMode() {
+  document.body.classList.toggle("dark");
 }
 </script>
 </body>
