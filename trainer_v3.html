@@ -72,7 +72,7 @@
       margin-top: 1rem;
     }
     .progress {
-      text-align: right;
+      text-align: left;
       font-size: 0.9rem;
       margin-top: -1rem;
       margin-bottom: 1rem;
@@ -99,7 +99,8 @@
       padding: 0.6rem 1rem;
       border-radius: 0.6rem;
       font-size: 1rem;
-      margin-left: 1rem;
+      display: block;
+      margin: 0 auto 1rem auto;
     }
   </style>
 </head>
@@ -116,9 +117,10 @@
   <label>Prüfer*in:
     <select id="prueferFilter" onchange="filterPruefer()"></select>
   </label>
-  <button class="zufalls-btn" onclick="zufallsFrage(true)">🎲 Zufallsfrage</button>
 
-  <div class="progress" id="fortschritt"></div>
+  <button class="zufalls-btn" onclick="zufallsFrage(true)">🎲 Zufallsfrage anzeigen</button>
+
+  <div class="progress" id="fortschritt">Fortschritt: 0 von 0</div>
 
   <div class="frage-block">
     <div id="frageText"></div>
