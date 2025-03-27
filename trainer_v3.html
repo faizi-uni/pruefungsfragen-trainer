@@ -136,7 +136,11 @@
   <div id="verlaufBox"></div>
 </div>
 <script>
-// Anpassung der Logik folgt im nächsten Schritt
+let dark = false;
+function toggleDarkMode() {
+  document.body.classList.toggle("dark");
+  dark = !dark;
+}
 </script>
 </body>
 </html>
