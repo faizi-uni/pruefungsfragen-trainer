@@ -1,165 +1,94 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <title>Interaktiver Fragebogen</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    #chat-container {
-      width: 400px;
-      max-width: 90%;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    #chat {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      border-bottom: 1px solid #ddd;
-    }
-    .message {
-      margin-bottom: 15px;
-    }
-    .bot {
-      color: #333;
-      font-weight: bold;
-    }
-    .user {
-      text-align: right;
-      color: #007BFF;
-    }
-    #input-area {
-      display: flex;
-      padding: 10px;
-    }
-    #input-area input {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 3px;
-    }
-    #input-area button {
-      padding: 10px;
-      margin-left: 10px;
-      border: none;
-      background: #007BFF;
-      color: #fff;
-      border-radius: 3px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <div id="chat-container">
-    <div id="chat"></div>
-    <div id="input-area">
-      <input type="text" id="user-input" placeholder="Deine Antwort ..." />
-      <button id="send-btn">Senden</button>
-    </div>
-  </div>
+body {
+  font-family: 'Roboto', sans-serif; /* moderne Schrift */
+  background: #121212; /* dunkler Hintergrund */
+  margin: 0;
+  padding: 0;
+  color: #e0e0e0; /* helle Schriftfarbe für guten Kontrast */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
 
-  <script>
-    // Fragen-Array mit den drei Fragen (Frage 2 fasst zwei Aspekte zusammen)
-    const questions = [
-      "Was ist das Ziel deines Suchens?",
-      "Wann möchtest du das Ganze beginnen und wie lange soll es gehen?",
-      "Was ist der Status Quo bzw. was ist der Wissensstand deines Vorhabens oder deiner Projektteilnehmer?"
-    ];
-    
-    let currentQuestionIndex = 0;
-    let sessionData = {
-      timestamp: new Date().toISOString(),
-      responses: {}
-    };
+/* Container-Design im Dark Mode */
+#chat-container {
+  width: 500px;
+  max-width: 90%;
+  background: #1e1e1e; /* etwas helleres Dunkel als Hintergrund */
+  border: 1px solid #333; /* dunkler Rahmen */
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); /* stärkerer Schatten */
+  display: flex;
+  flex-direction: column;
+}
 
-    const chatDiv = document.getElementById("chat");
-    const inputField = document.getElementById("user-input");
-    const sendBtn = document.getElementById("send-btn");
+/* Chat-Bereich */
+#chat {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  border-bottom: 1px solid #333;
+}
 
-    // Funktion zum Hinzufügen einer Chat-Nachricht
-    function addMessage(text, sender) {
-      const msgDiv = document.createElement("div");
-      msgDiv.classList.add("message");
-      msgDiv.classList.add(sender);
-      msgDiv.innerText = text;
-      chatDiv.appendChild(msgDiv);
-      chatDiv.scrollTop = chatDiv.scrollHeight;
-    }
+/* Nachrichten-Styling */
+.message {
+  margin-bottom: 20px;
+  opacity: 0;
+}
+.bot {
+  font-size: 1.5em;  /* größere Schrift für die Fragen */
+  font-weight: bold;
+  line-height: 1.4;
+  color: #ffffff;
+}
+.user {
+  text-align: right;
+  color: #4fc3f7; /* helleres Blau als Kontrast */
+  font-size: 1.2em;
+}
 
-    // Starte den Chat, indem die erste Frage angezeigt wird
-    function startChat() {
-      addMessage(questions[currentQuestionIndex], "bot");
-    }
+/* Eingabebereich */
+#input-area {
+  display: flex;
+  padding: 20px;
+  background: #181818;
+}
+#input-area input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 1em;
+  background: #262626;
+  color: #e0e0e0;
+}
+#input-area button {
+  padding: 12px 20px;
+  margin-left: 10px;
+  border: none;
+  background: #4fc3f7; /* gleiche Farbe wie bei User-Text */
+  color: #121212;
+  border-radius: 4px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+#input-area button:hover {
+  background: #38b0e3;
+}
 
-    // Funktion zum Verarbeiten einer Antwort
-    function processAnswer() {
-      const answer = inputField.value.trim();
-      if (!answer) return;
-      // Zeige Antwort des Users im Chat an
-      addMessage(answer, "user");
-
-      // Speichern der Antwort in der sessionData-Struktur
-      switch (currentQuestionIndex) {
-        case 0:
-          sessionData.responses.ziel = answer;
-          break;
-        case 1:
-          sessionData.responses.zeitplanung = answer;
-          break;
-        case 2:
-          sessionData.responses.status_quo = answer;
-          break;
-      }
-
-      inputField.value = "";
-      currentQuestionIndex++;
-
-      // Wenn es noch Fragen gibt, die nächste Frage anzeigen
-      if (currentQuestionIndex < questions.length) {
-        setTimeout(() => {
-          addMessage(questions[currentQuestionIndex], "bot");
-        }, 500); // kurze Verzögerung für ein natürlicheres Gespräch
-      } else {
-        // Alle Fragen beantwortet, Session abschließen und speichern
-        addMessage("Vielen Dank! Deine Antworten wurden gespeichert.", "bot");
-        // Hier erfolgt der API-Aufruf an das Backend, um die Daten zu persistieren.
-        saveSessionData(sessionData);
-      }
-    }
-
-    // Simulierter API-Aufruf zum Speichern der Session-Daten.
-    // Hier solltest du einen echten AJAX-/Fetch-Aufruf zu deinem Server implementieren.
-    function saveSessionData(data) {
-      console.log("Session gespeichert:", data);
-      // Beispiel: fetch('/api/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) })
-      //   .then(response => response.json())
-      //   .then(result => console.log("Daten gespeichert:", result))
-      //   .catch(error => console.error("Fehler beim Speichern:", error));
-    }
-
-    // Eventlistener: Bei Klick auf den Senden-Button oder Enter-Taste
-    sendBtn.addEventListener("click", processAnswer);
-    inputField.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        processAnswer();
-      }
-    });
-
-    // Chat starten
-    startChat();
-  </script>
-</body>
-</html>
+/* Typewriter-Effekt */
+@keyframes slideIn {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.animate-slideIn {
+  animation: slideIn 0.7s ease-out forwards;
+}
