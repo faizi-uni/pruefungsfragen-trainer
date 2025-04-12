@@ -2,25 +2,46 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Fragebogen mit Login & Firebase</title>
+  <title>Fragebogen mit Login, Typewriter & Firebase (Modular)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Raleway Light von Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300&display=swap" rel="stylesheet">
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: 'Raleway', sans-serif; background: #121212; margin: 0; padding: 0; color: #e0e0e0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .container { width: 500px; max-width: 90%; background: #1e1e1e; border: 1px solid #333; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.7); padding: 30px; text-align: center; }
+    /* Basis-Dark-Mode-Stile */
+    body { 
+      font-family: 'Raleway', sans-serif;
+      background: #121212;
+      margin: 0; padding: 0;
+      color: #e0e0e0;
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh;
+    }
+    .container { 
+      width: 500px; max-width: 90%;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.7);
+      padding: 30px; text-align: center;
+    }
     /* Login-Container */
     #chat-container { display: none; flex-direction: column; height: 80vh; }
-    #chat { flex: 1; overflow-y: auto; border-bottom: 1px solid #333; text-align: left; margin-bottom: 10px; }
+    #chat { 
+      flex: 1; overflow-y: auto; border-bottom: 1px solid #333; 
+      text-align: left; margin-bottom: 10px; 
+    }
     .message { margin: 10px 0; }
     .bot { font-size: 1.5em; font-weight: 300; }
     .user { text-align: right; font-size: 1.2em; color: #4fc3f7; }
     #input-area { display: flex; margin-top: 10px; }
-    #input-area input { flex: 1; padding: 10px; border: 1px solid #333; border-radius: 4px; background: #262626; color: #e0e0e0; }
-    #input-area button, #submit-btn, button { padding: 10px 15px; border: none; border-radius: 4px; background: #4fc3f7; color: #121212; cursor: pointer; }
+    #input-area input { 
+      flex: 1; padding: 10px; border: 1px solid #333; border-radius: 4px;
+      background: #262626; color: #e0e0e0; 
+    }
+    #input-area button, #submit-btn, button { 
+      padding: 10px 15px; border: none; border-radius: 4px;
+      background: #4fc3f7; color: #121212; cursor: pointer; 
+    }
     #submit-btn { display: none; margin-top: 15px; }
     button:hover { background: #38b0e3; }
     #login-error { color: #ff5555; margin-top: 10px; display: none; }
@@ -47,21 +68,28 @@
     <button id="submit-btn">Übermitteln</button>
   </div>
 
-  <script>
-    // --- Firebase-Konfiguration (ersetze die folgenden Werte durch deine Firebase-Projektwerte) ---
+  <!-- Verwende ein <script type="module">, um den modularen Firebase-SDK zu nutzen -->
+  <script type="module">
+    // Importiere die benötigten Funktionen von Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
+    import { getFirestore, addDoc, collection } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
+    
+    // Firebase-Konfiguration (ersetze die Werte durch deine echten Konfigurationsdaten)
     const firebaseConfig = {
-      apiKey: "DEINE_API_KEY",
-      authDomain: "DEIN-PROJEKT.firebaseapp.com",
-      projectId: "DEIN-PROJEKT",
-      storageBucket: "DEIN-PROJEKT.appspot.com",
-      messagingSenderId: "DEINE_SENDER_ID",
-      appId: "DEINE_APP_ID"
+      apiKey: "AIzaSyBMZq32y8l032yWdzwC2oWOUsomgTiKEEc",
+      authDomain: "anfragentool.firebaseapp.com",
+      projectId: "anfragentool",
+      storageBucket: "anfragentool.firebasestorage.app",
+      messagingSenderId: "86415814713",
+      appId: "1:86415814713:web:35c387c4ffc9d6c7bf1de8",
+      measurementId: "G-HH0NN7M69Q"
     };
-    // Firebase initialisieren und Firestore einrichten
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
 
-    // --- Variablen und DOM-Elemente ---
+    // Firebase initialisieren und Firestore abrufen
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // DOM-Elemente und Variablen
     const CORRECT_PASSWORD = "geheim123";
     const loginContainer = document.getElementById("login-container"),
           chatContainer = document.getElementById("chat-container"),
@@ -81,7 +109,7 @@
     let currentQuestionIndex = 0;
     const sessionData = { timestamp: new Date().toISOString(), responses: {} };
 
-    // --- Login-Logik ---
+    // Login-Funktion
     loginBtn.addEventListener("click", () => {
       if (passwordInput.value === CORRECT_PASSWORD) {
         loginContainer.style.display = "none";
@@ -92,27 +120,31 @@
       }
     });
 
-    // --- Typewriter-Effekt ---
+    // Typewriter-Effekt: Zeigt Text Zeichen für Zeichen an
     function typeWriter(target, text, idx = 0, callback) {
       if (idx < text.length) {
         target.innerHTML += text.charAt(idx);
         setTimeout(() => typeWriter(target, text, idx + 1, callback), 50);
-      } else if (callback) callback();
+      } else if (callback) {
+        callback();
+      }
     }
 
-    // --- Frage anzeigen ---
+    // Zeigt die nächste Frage
     function showNextQuestion() {
       if (currentQuestionIndex < questions.length) {
         const msg = document.createElement("div");
         msg.className = "message bot";
         chatDiv.appendChild(msg);
-        typeWriter(msg, questions[currentQuestionIndex], 0, () => chatDiv.scrollTop = chatDiv.scrollHeight);
+        typeWriter(msg, questions[currentQuestionIndex], 0, () => {
+          chatDiv.scrollTop = chatDiv.scrollHeight;
+        });
       } else {
         submitBtn.style.display = "block";
       }
     }
 
-    // --- User-Antwort hinzufügen ---
+    // Fügt eine Benutzer-Nachricht hinzu
     function addUserMessage(text) {
       const msg = document.createElement("div");
       msg.className = "message user";
@@ -121,7 +153,7 @@
       chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
-    // --- Antwort verarbeiten ---
+    // Verarbeitet die Antworten des Benutzers
     function processAnswer() {
       const answer = inputField.value.trim();
       if (!answer) return;
@@ -134,16 +166,19 @@
       setTimeout(showNextQuestion, 500);
     }
 
-    // --- Daten in Firebase speichern ---
-    submitBtn.addEventListener("click", () => {
+    // Speichern der Antworten in Firebase Firestore
+    submitBtn.addEventListener("click", async () => {
       addUserMessage("Vielen Dank! Deine Antworten wurden übermittelt.");
-      db.collection("sessions").add(sessionData)
-        .then(docRef => console.log("Gespeichert, ID:", docRef.id))
-        .catch(err => console.error("Speicherfehler:", err));
+      try {
+        const docRef = await addDoc(collection(db, "sessions"), sessionData);
+        console.log("Gespeichert, ID:", docRef.id);
+      } catch (err) {
+        console.error("Fehler:", err);
+      }
       submitBtn.disabled = true;
     });
 
-    // --- Event-Listener für Antwort-Eingabe ---
+    // Event-Listener für Antwort-Eingabe
     sendBtn.addEventListener("click", processAnswer);
     inputField.addEventListener("keypress", e => { if (e.key === "Enter") processAnswer(); });
   </script>
