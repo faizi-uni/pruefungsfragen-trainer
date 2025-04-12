@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <title>Interaktiver Fragebogen – Schreibmaschinen-Effekt</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Google Fonts: Roboto -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <!-- Google Fonts: Raleway (Light) -->
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300&display=swap" rel="stylesheet">
   <style>
-    /* Grundstil – Dark Mode */
+    /* Dark Mode – mit Raleway als Hauptschrift */
     body {
-      font-family: 'Roboto', sans-serif;
+      font-family: 'Raleway', sans-serif;
       background: #121212;
       margin: 0;
       padding: 0;
@@ -44,7 +44,7 @@
     }
     .bot {
       font-size: 1.5em;
-      font-weight: bold;
+      font-weight: 300;  /* Leichtgewichtig */
       color: #ffffff;
     }
     .user {
@@ -110,37 +110,26 @@
     const inputField = document.getElementById("user-input");
     const sendBtn = document.getElementById("send-btn");
 
-    /**
-     * Funktion: typeWriterEffect
-     * Zeigt den Text buchstabeweise an.
-     * @param {HTMLElement} target - Element, in dem der Text angezeigt wird
-     * @param {string} text - Der anzuzeigende Text
-     * @param {number} index - Aktuelle Position im Text (Start = 0)
-     * @param {function} callback - Funktion, die nach Fertigstellen aufgerufen wird
-     */
+    // Typewriter-Funktion: Zeigt Text Buchstabe für Buchstabe an
     function typeWriterEffect(target, text, index, callback) {
       if (index < text.length) {
         target.innerHTML += text.charAt(index);
         setTimeout(() => {
           typeWriterEffect(target, text, index + 1, callback);
-        }, 50);  // Delay von 50 Millisekunden pro Buchstabe
+        }, 50); // 50 Millisekunden pro Buchstabe
       } else {
         if (callback) callback();
       }
     }
 
-    /**
-     * Funktion: showNextQuestion
-     * Zeigt die nächste Frage mit typewriter-Effekt an.
-     */
+    // Zeigt die nächste Frage mit Typewriter-Effekt an
     function showNextQuestion() {
       if (currentQuestionIndex < questions.length) {
         const msgDiv = document.createElement("div");
         msgDiv.classList.add("message", "bot");
         chatDiv.appendChild(msgDiv);
-        // Leeren des Texts und Start des Typewriter-Effekts
         msgDiv.innerHTML = "";
-        typeWriterEffect(msgDiv, questions[currentQuestionIndex], 0, function() {
+        typeWriterEffect(msgDiv, questions[currentQuestionIndex], 0, () => {
           chatDiv.scrollTop = chatDiv.scrollHeight;
         });
       } else {
@@ -149,12 +138,7 @@
       }
     }
 
-    /**
-     * Funktion: addMessage
-     * Fügt eine Nachricht sofort hinzu (z. B. für User-Antworten).
-     * @param {string} text - Nachrichtentext
-     * @param {string} sender - "bot" oder "user"
-     */
+    // Fügt eine Nachricht sofort hinzu (für User-Antworten)
     function addMessage(text, sender) {
       const msgDiv = document.createElement("div");
       msgDiv.classList.add("message", sender);
@@ -163,16 +147,13 @@
       chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
-    /**
-     * Funktion: processAnswer
-     * Verarbeitet die Antwort des Users, speichert sie und zeigt die nächste Frage.
-     */
+    // Verarbeitet User-Antworten und zeigt die nächste Frage an
     function processAnswer() {
       const answer = inputField.value.trim();
       if (answer === "") return;
       addMessage(answer, "user");
       
-      // Speichern der Antworten in der Session-Daten-Struktur
+      // Speichere die Antwort in der Session
       switch (currentQuestionIndex) {
         case 0: sessionData.responses.ziel = answer; break;
         case 1: sessionData.responses.zeitplanung = answer; break;
@@ -180,28 +161,36 @@
       }
       inputField.value = "";
       currentQuestionIndex++;
-      // Warte kurz und zeige dann die nächste Frage
       setTimeout(showNextQuestion, 500);
     }
     
-    /**
-     * Funktion: saveSessionData
-     * Hier werden die gesammelten Session-Daten gespeichert.
-     * Momentan wird das nur in der Konsole ausgegeben.
-     * Zum Speichern ohne eigenen Server könntest du z. B. Firebase verwenden.
-     */
+    // Speichert die Session-Daten per POST an den Google Apps Script-Web-App-Endpunkt
     function saveSessionData(data) {
-      console.log("Session gespeichert:", data);
-      // Hier könnte ein API-Aufruf stehen, z.B. an Firebase
+      // Ersetze die URL unten durch die URL, die du beim Deployment deiner Web-App erhalten hast
+      const endpoint = "https://script.google.com/macros/s/YOUR_WEB_APP_ID/exec";
+      fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(result => {
+        console.log("Session gespeichert:", result);
+      })
+      .catch(error => {
+        console.error("Fehler beim Speichern:", error);
+      });
     }
     
-    // Event-Listener für Button-Klick und Enter-Taste
+    // Event-Listener
     sendBtn.addEventListener("click", processAnswer);
     inputField.addEventListener("keypress", function(e) {
       if (e.key === "Enter") processAnswer();
     });
     
-    // Starte den Fragebogen mit der ersten Frage
+    // Startet den Fragebogen
     showNextQuestion();
   </script>
 </body>
