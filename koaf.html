@@ -4,61 +4,55 @@
   <meta charset="UTF-8">
   <title>Interaktiver Fragebogen - Dark Mode</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Google Fonts Einbindung -->
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js"></script>
   <style>
-    /* Allgemeines minimalistisches Dark Mode Styling */
     body {
-      font-family: 'Roboto', sans-serif; /* moderne Schrift */
-      background: #121212; /* dunkler Hintergrund */
+      font-family: 'Roboto', sans-serif;
+      background: #121212;
       margin: 0;
       padding: 0;
-      color: #e0e0e0; /* helle Schriftfarbe für guten Kontrast */
+      color: #e0e0e0;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
-    
-    /* Container-Design im Dark Mode */
     #chat-container {
       width: 500px;
       max-width: 90%;
-      background: #1e1e1e; /* etwas helleres Dunkel als Hintergrund */
-      border: 1px solid #333; /* dunkler Rahmen */
+      background: #1e1e1e;
+      border: 1px solid #333;
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); /* stärkerer Schatten */
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
       display: flex;
       flex-direction: column;
     }
-    
-    /* Chat-Bereich */
     #chat {
       flex: 1;
       padding: 30px;
       overflow-y: auto;
       border-bottom: 1px solid #333;
     }
-    
-    /* Nachrichten-Styling */
     .message {
       margin-bottom: 20px;
-      opacity: 0;
+      opacity: 1;
     }
     .bot {
-      font-size: 1.5em;  /* größere Schrift für die Fragen */
+      font-size: 1.5em;
       font-weight: bold;
       line-height: 1.4;
       color: #ffffff;
     }
     .user {
       text-align: right;
-      color: #4fc3f7; /* helleres Blau als Kontrast */
+      color: #4fc3f7;
       font-size: 1.2em;
     }
-    
-    /* Eingabebereich */
     #input-area {
       display: flex;
       padding: 20px;
@@ -77,7 +71,7 @@
       padding: 12px 20px;
       margin-left: 10px;
       border: none;
-      background: #4fc3f7; /* gleiche Farbe wie bei User-Text */
+      background: #4fc3f7;
       color: #121212;
       border-radius: 4px;
       font-size: 1em;
@@ -86,21 +80,6 @@
     }
     #input-area button:hover {
       background: #38b0e3;
-    }
-    
-    /* Typewriter-Effekt */
-    @keyframes slideIn {
-      0% {
-        transform: translateX(-100%);
-        opacity: 0;
-      }
-      100% {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-    .animate-slideIn {
-      animation: slideIn 0.7s ease-out forwards;
     }
   </style>
 </head>
@@ -114,13 +93,24 @@
   </div>
 
   <script>
-    // Beispiel-Fragen
+    // Firebase initialisieren
+    const firebaseConfig = {
+      apiKey: "DEINE_API_KEY",
+      authDomain: "DEIN-PROJEKT.firebaseapp.com",
+      projectId: "DEIN-PROJEKT",
+      storageBucket: "DEIN-PROJEKT.appspot.com",
+      messagingSenderId: "DEINE_SENDER_ID",
+      appId: "DEINE_APP_ID"
+    };
+    const appFirebase = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore(appFirebase);
+
+    // Fragen-Array
     const questions = [
       "Was ist das Ziel deines Suchens?",
       "Wann möchtest du das Ganze beginnen und wie lange soll es gehen?",
       "Was ist der Status Quo bzw. was ist der Wissensstand deines Vorhabens oder deiner Projektteilnehmer?"
     ];
-    
     let currentQuestionIndex = 0;
     let sessionData = {
       timestamp: new Date().toISOString(),
@@ -131,30 +121,55 @@
     const inputField = document.getElementById("user-input");
     const sendBtn = document.getElementById("send-btn");
 
-    // Funktion zum Hinzufügen einer Chat-Nachricht
+    // Typewriter-Funktion: zeigt Text buchstabeweise an
+    function typeText(target, text, callback) {
+      let index = 0;
+      target.innerText = "";
+      let timer = setInterval(() => {
+        target.innerText += text[index];
+        index++;
+        if(index === text.length) {
+          clearInterval(timer);
+          if(callback) callback();
+        }
+      }, 50); // 50 Millisekunden pro Buchstabe
+    }
+
+    // Zeigt die nächste Frage mit Typewriter-Effekt
+    function showNextQuestion() {
+      if (currentQuestionIndex < questions.length) {
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("message", "bot");
+        chatDiv.appendChild(msgDiv);
+        typeText(msgDiv, questions[currentQuestionIndex], () => {
+          chatDiv.scrollTop = chatDiv.scrollHeight;
+        });
+      } else {
+        addMessage("Vielen Dank! Deine Antworten wurden gespeichert.", "bot");
+        saveSessionData(sessionData);
+      }
+    }
+
+    // Fügt eine Nachricht ohne Animation hinzu (für Nutzer-Antworten)
     function addMessage(text, sender) {
       const msgDiv = document.createElement("div");
       msgDiv.classList.add("message", sender);
       msgDiv.innerText = text;
       chatDiv.appendChild(msgDiv);
-      if (sender === "bot") {
-        msgDiv.classList.add("animate-slideIn");
-      } else {
-        msgDiv.style.opacity = "1";
-      }
       chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
-    function startChat() {
-      addMessage(questions[currentQuestionIndex], "bot");
-    }
+    // Beim Start wird die erste Frage angezeigt
+    showNextQuestion();
 
+    // Verarbeitet Antworten des Nutzers
     function processAnswer() {
       const answer = inputField.value.trim();
-      if (!answer) return;
+      if(!answer) return;
       addMessage(answer, "user");
 
-      switch (currentQuestionIndex) {
+      // Speichere die Antwort
+      switch(currentQuestionIndex) {
         case 0:
           sessionData.responses.ziel = answer;
           break;
@@ -165,31 +180,26 @@
           sessionData.responses.status_quo = answer;
           break;
       }
-
       inputField.value = "";
       currentQuestionIndex++;
-
-      if (currentQuestionIndex < questions.length) {
-        setTimeout(() => {
-          addMessage(questions[currentQuestionIndex], "bot");
-        }, 500);
-      } else {
-        addMessage("Vielen Dank! Deine Antworten wurden gespeichert.", "bot");
-        saveSessionData(sessionData);
-      }
+      // Zeige die nächste Frage an (mit Typewriter-Effekt)
+      setTimeout(showNextQuestion, 500);
     }
 
     function saveSessionData(data) {
-      console.log("Session gespeichert:", data);
-      // Hier wird normalerweise ein API-Aufruf gemacht
+      db.collection("sessions").add(data)
+        .then((docRef) => {
+          console.log("Session gespeichert mit ID:", docRef.id);
+        })
+        .catch((error) => {
+          console.error("Fehler beim Speichern:", error);
+        });
     }
 
     sendBtn.addEventListener("click", processAnswer);
-    inputField.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") processAnswer();
+    inputField.addEventListener("keypress", (e) => {
+      if(e.key === "Enter") processAnswer();
     });
-
-    startChat();
   </script>
 </body>
 </html>
