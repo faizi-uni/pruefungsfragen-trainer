@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Fragebogen mit Login & Typewriter-Effekt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Raleway Light von Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300&display=swap" rel="stylesheet">
+  <style>
+    /* Basis-Dark-Mode mit Raleway */
+    body { font-family: 'Raleway', sans-serif; background: #121212; margin: 0; padding: 0;
+           color: #e0e0e0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .container { width: 500px; max-width: 90%; background: #1e1e1e; border: 1px solid #333;
+                 border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.7); padding: 30px; text-align: center; }
+    /* Login-Bereich */
+    #chat-container { display: none; flex-direction: column; height: 80vh; }
+    #chat { flex: 1; overflow-y: auto; border-bottom: 1px solid #333; text-align: left; margin-bottom: 10px; }
+    /* Nachrichten */
+    .message { margin: 10px 0; }
+    .bot { font-size: 1.5em; font-weight: 300; }
+    .user { text-align: right; font-size: 1.2em; color: #4fc3f7; }
+    /* Eingabebereich */
+    #input-area { display: flex; margin-top: 10px; }
+    #input-area input { flex: 1; padding: 10px; border: 1px solid #333; border-radius: 4px; background: #262626; color: #e0e0e0; }
+    #input-area button, #submit-btn, button { padding: 10px 15px; border: none; border-radius: 4px;
+                                               background: #4fc3f7; color: #121212; cursor: pointer; }
+    #submit-btn { display: none; margin-top: 15px; }
+    button:hover { background: #38b0e3; }
+    /* Kleinere Abstände für Fehlermeldung */
+    #login-error { color: #ff5555; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+  <!-- Login-Container -->
+  <div id="login-container" class="container">
+    <h2>Fragebogen-Zugang</h2>
+    <p>Bitte Passwort eingeben:</p>
+    <input type="password" id="password-input" placeholder="Passwort">
+    <br><br>
+    <button id="login-btn">Einloggen</button>
+    <div id="login-error">Falsches Passwort!</div>
+  </div>
+
+  <!-- Fragebogen-Container -->
+  <div id="chat-container" class="container">
+    <div id="chat"></div>
+    <div id="input-area">
+      <input type="text" id="user-input" placeholder="Deine Antwort...">
+      <button id="send-btn">Senden</button>
+    </div>
+    <button id="submit-btn">Übermitteln</button>
+  </div>
+
+  <script>
+    // Konfiguration
+    const CORRECT_PASSWORD = "geheim123"; // Passwort, das Zugriff gewährt
+    const endpoint = "https://script.google.com/macros/s/YOUR_WEB_APP_ID/exec"; // Ersetze durch deinen Endpunkt
+
+    // DOM-Elemente
+    const loginContainer = document.getElementById("login-container"),
+          chatContainer = document.getElementById("chat-container"),
+          loginBtn = document.getElementById("login-btn"),
+          passwordInput = document.getElementById("password-input"),
+          loginError = document.getElementById("login-error"),
+          chatDiv = document.getElementById("chat"),
+          inputField = document.getElementById("user-input"),
+          sendBtn = document.getElementById("send-btn"),
+          submitBtn = document.getElementById("submit-btn");
+
+    // Fragen und Sessionsdaten
+    const questions = [
+      "Was ist das Ziel deines Suchens?",
+      "Wann möchtest du das Ganze beginnen und wie lange soll es gehen?",
+      "Was ist der Status Quo bzw. dein aktueller Wissensstand?"
+    ];
+    let currentQuestionIndex = 0;
+    const sessionData = { timestamp: new Date().toISOString(), responses: {} };
+
+    // Login-Logik
+    loginBtn.addEventListener("click", () => {
+      if (passwordInput.value === CORRECT_PASSWORD) {
+        loginContainer.style.display = "none";
+        chatContainer.style.display = "flex";
+        showNextQuestion();
+      } else {
+        loginError.style.display = "block";
+      }
+    });
+
+    // Typewriter-Effekt: Zeigt Text Zeichen für Zeichen an
+    function typeWriter(target, text, idx = 0, callback) {
+      if (idx < text.length) {
+        target.innerHTML += text.charAt(idx);
+        setTimeout(() => typeWriter(target, text, idx + 1, callback), 50);
+      } else if (callback) callback();
+    }
+
+    // Zeigt die nächste Frage im Chat
+    function showNextQuestion() {
+      if (currentQuestionIndex < questions.length) {
+        const msg = document.createElement("div");
+        msg.className = "message bot";
+        chatDiv.appendChild(msg);
+        typeWriter(msg, questions[currentQuestionIndex], 0, () => chatDiv.scrollTop = chatDiv.scrollHeight);
+      } else {
+        submitBtn.style.display = "block";
+      }
+    }
+
+    // Fügt eine Nachricht für den Nutzer sofort ein
+    function addUserMessage(text) {
+      const msg = document.createElement("div");
+      msg.className = "message user";
+      msg.innerText = text;
+      chatDiv.appendChild(msg);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    // Verarbeitet die Nutzerantworten und speichert sie
+    function processAnswer() {
+      const answer = inputField.value.trim();
+      if (!answer) return;
+      addUserMessage(answer);
+      if (currentQuestionIndex === 0) sessionData.responses.ziel = answer;
+      else if (currentQuestionIndex === 1) sessionData.responses.zeitplanung = answer;
+      else if (currentQuestionIndex === 2) sessionData.responses.status_quo = answer;
+      inputField.value = "";
+      currentQuestionIndex++;
+      setTimeout(showNextQuestion, 500);
+    }
+
+    // Übermitteln der gesamten Session-Daten
+    submitBtn.addEventListener("click", () => {
+      addUserMessage("Vielen Dank! Deine Antworten wurden übermittelt.");
+      fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" },
+                         body: JSON.stringify(sessionData) })
+        .then(response => response.json())
+        .then(result => console.log("Gespeichert:", result))
+        .catch(err => console.error("Speicherfehler:", err));
+      submitBtn.disabled = true;
+    });
+
+    // Event-Listener für Antwort-Eingabe
+    sendBtn.addEventListener("click", processAnswer);
+    inputField.addEventListener("keypress", e => { if (e.key === "Enter") processAnswer(); });
+  </script>
+</body>
+</html>
