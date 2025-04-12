@@ -2,14 +2,12 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Interaktiver Fragebogen - Dark Mode</title>
+  <title>Interaktiver Fragebogen – Schreibmaschinen-Effekt</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Roboto -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js"></script>
   <style>
+    /* Grundstil – Dark Mode */
     body {
       font-family: 'Roboto', sans-serif;
       background: #121212;
@@ -21,6 +19,7 @@
       align-items: center;
       height: 100vh;
     }
+    /* Container */
     #chat-container {
       width: 500px;
       max-width: 90%;
@@ -32,20 +31,20 @@
       display: flex;
       flex-direction: column;
     }
+    /* Chat-Bereich */
     #chat {
       flex: 1;
       padding: 30px;
       overflow-y: auto;
       border-bottom: 1px solid #333;
     }
+    /* Nachrichten */
     .message {
       margin-bottom: 20px;
-      opacity: 1;
     }
     .bot {
       font-size: 1.5em;
       font-weight: bold;
-      line-height: 1.4;
       color: #ffffff;
     }
     .user {
@@ -53,6 +52,7 @@
       color: #4fc3f7;
       font-size: 1.2em;
     }
+    /* Eingabebereich */
     #input-area {
       display: flex;
       padding: 20px;
@@ -93,24 +93,13 @@
   </div>
 
   <script>
-    // Firebase initialisieren
-    const firebaseConfig = {
-      apiKey: "DEINE_API_KEY",
-      authDomain: "DEIN-PROJEKT.firebaseapp.com",
-      projectId: "DEIN-PROJEKT",
-      storageBucket: "DEIN-PROJEKT.appspot.com",
-      messagingSenderId: "DEINE_SENDER_ID",
-      appId: "DEINE_APP_ID"
-    };
-    const appFirebase = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore(appFirebase);
-
-    // Fragen-Array
+    // Array mit den Fragen
     const questions = [
       "Was ist das Ziel deines Suchens?",
       "Wann möchtest du das Ganze beginnen und wie lange soll es gehen?",
       "Was ist der Status Quo bzw. was ist der Wissensstand deines Vorhabens oder deiner Projektteilnehmer?"
     ];
+    
     let currentQuestionIndex = 0;
     let sessionData = {
       timestamp: new Date().toISOString(),
@@ -121,27 +110,37 @@
     const inputField = document.getElementById("user-input");
     const sendBtn = document.getElementById("send-btn");
 
-    // Typewriter-Funktion: zeigt Text buchstabeweise an
-    function typeText(target, text, callback) {
-      let index = 0;
-      target.innerText = "";
-      let timer = setInterval(() => {
-        target.innerText += text[index];
-        index++;
-        if(index === text.length) {
-          clearInterval(timer);
-          if(callback) callback();
-        }
-      }, 50); // 50 Millisekunden pro Buchstabe
+    /**
+     * Funktion: typeWriterEffect
+     * Zeigt den Text buchstabeweise an.
+     * @param {HTMLElement} target - Element, in dem der Text angezeigt wird
+     * @param {string} text - Der anzuzeigende Text
+     * @param {number} index - Aktuelle Position im Text (Start = 0)
+     * @param {function} callback - Funktion, die nach Fertigstellen aufgerufen wird
+     */
+    function typeWriterEffect(target, text, index, callback) {
+      if (index < text.length) {
+        target.innerHTML += text.charAt(index);
+        setTimeout(() => {
+          typeWriterEffect(target, text, index + 1, callback);
+        }, 50);  // Delay von 50 Millisekunden pro Buchstabe
+      } else {
+        if (callback) callback();
+      }
     }
 
-    // Zeigt die nächste Frage mit Typewriter-Effekt
+    /**
+     * Funktion: showNextQuestion
+     * Zeigt die nächste Frage mit typewriter-Effekt an.
+     */
     function showNextQuestion() {
       if (currentQuestionIndex < questions.length) {
         const msgDiv = document.createElement("div");
         msgDiv.classList.add("message", "bot");
         chatDiv.appendChild(msgDiv);
-        typeText(msgDiv, questions[currentQuestionIndex], () => {
+        // Leeren des Texts und Start des Typewriter-Effekts
+        msgDiv.innerHTML = "";
+        typeWriterEffect(msgDiv, questions[currentQuestionIndex], 0, function() {
           chatDiv.scrollTop = chatDiv.scrollHeight;
         });
       } else {
@@ -150,7 +149,12 @@
       }
     }
 
-    // Fügt eine Nachricht ohne Animation hinzu (für Nutzer-Antworten)
+    /**
+     * Funktion: addMessage
+     * Fügt eine Nachricht sofort hinzu (z. B. für User-Antworten).
+     * @param {string} text - Nachrichtentext
+     * @param {string} sender - "bot" oder "user"
+     */
     function addMessage(text, sender) {
       const msgDiv = document.createElement("div");
       msgDiv.classList.add("message", sender);
@@ -159,47 +163,46 @@
       chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
-    // Beim Start wird die erste Frage angezeigt
-    showNextQuestion();
-
-    // Verarbeitet Antworten des Nutzers
+    /**
+     * Funktion: processAnswer
+     * Verarbeitet die Antwort des Users, speichert sie und zeigt die nächste Frage.
+     */
     function processAnswer() {
       const answer = inputField.value.trim();
-      if(!answer) return;
+      if (answer === "") return;
       addMessage(answer, "user");
-
-      // Speichere die Antwort
-      switch(currentQuestionIndex) {
-        case 0:
-          sessionData.responses.ziel = answer;
-          break;
-        case 1:
-          sessionData.responses.zeitplanung = answer;
-          break;
-        case 2:
-          sessionData.responses.status_quo = answer;
-          break;
+      
+      // Speichern der Antworten in der Session-Daten-Struktur
+      switch (currentQuestionIndex) {
+        case 0: sessionData.responses.ziel = answer; break;
+        case 1: sessionData.responses.zeitplanung = answer; break;
+        case 2: sessionData.responses.status_quo = answer; break;
       }
       inputField.value = "";
       currentQuestionIndex++;
-      // Zeige die nächste Frage an (mit Typewriter-Effekt)
+      // Warte kurz und zeige dann die nächste Frage
       setTimeout(showNextQuestion, 500);
     }
-
+    
+    /**
+     * Funktion: saveSessionData
+     * Hier werden die gesammelten Session-Daten gespeichert.
+     * Momentan wird das nur in der Konsole ausgegeben.
+     * Zum Speichern ohne eigenen Server könntest du z. B. Firebase verwenden.
+     */
     function saveSessionData(data) {
-      db.collection("sessions").add(data)
-        .then((docRef) => {
-          console.log("Session gespeichert mit ID:", docRef.id);
-        })
-        .catch((error) => {
-          console.error("Fehler beim Speichern:", error);
-        });
+      console.log("Session gespeichert:", data);
+      // Hier könnte ein API-Aufruf stehen, z.B. an Firebase
     }
-
+    
+    // Event-Listener für Button-Klick und Enter-Taste
     sendBtn.addEventListener("click", processAnswer);
-    inputField.addEventListener("keypress", (e) => {
-      if(e.key === "Enter") processAnswer();
+    inputField.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") processAnswer();
     });
+    
+    // Starte den Fragebogen mit der ersten Frage
+    showNextQuestion();
   </script>
 </body>
 </html>
