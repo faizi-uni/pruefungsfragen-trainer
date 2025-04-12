@@ -1,94 +1,195 @@
-body {
-  font-family: 'Roboto', sans-serif; /* moderne Schrift */
-  background: #121212; /* dunkler Hintergrund */
-  margin: 0;
-  padding: 0;
-  color: #e0e0e0; /* helle Schriftfarbe für guten Kontrast */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Interaktiver Fragebogen - Dark Mode</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Google Fonts Einbindung -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    /* Allgemeines minimalistisches Dark Mode Styling */
+    body {
+      font-family: 'Roboto', sans-serif; /* moderne Schrift */
+      background: #121212; /* dunkler Hintergrund */
+      margin: 0;
+      padding: 0;
+      color: #e0e0e0; /* helle Schriftfarbe für guten Kontrast */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    
+    /* Container-Design im Dark Mode */
+    #chat-container {
+      width: 500px;
+      max-width: 90%;
+      background: #1e1e1e; /* etwas helleres Dunkel als Hintergrund */
+      border: 1px solid #333; /* dunkler Rahmen */
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); /* stärkerer Schatten */
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Chat-Bereich */
+    #chat {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+      border-bottom: 1px solid #333;
+    }
+    
+    /* Nachrichten-Styling */
+    .message {
+      margin-bottom: 20px;
+      opacity: 0;
+    }
+    .bot {
+      font-size: 1.5em;  /* größere Schrift für die Fragen */
+      font-weight: bold;
+      line-height: 1.4;
+      color: #ffffff;
+    }
+    .user {
+      text-align: right;
+      color: #4fc3f7; /* helleres Blau als Kontrast */
+      font-size: 1.2em;
+    }
+    
+    /* Eingabebereich */
+    #input-area {
+      display: flex;
+      padding: 20px;
+      background: #181818;
+    }
+    #input-area input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #333;
+      border-radius: 4px;
+      font-size: 1em;
+      background: #262626;
+      color: #e0e0e0;
+    }
+    #input-area button {
+      padding: 12px 20px;
+      margin-left: 10px;
+      border: none;
+      background: #4fc3f7; /* gleiche Farbe wie bei User-Text */
+      color: #121212;
+      border-radius: 4px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    #input-area button:hover {
+      background: #38b0e3;
+    }
+    
+    /* Typewriter-Effekt */
+    @keyframes slideIn {
+      0% {
+        transform: translateX(-100%);
+        opacity: 0;
+      }
+      100% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    .animate-slideIn {
+      animation: slideIn 0.7s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <div id="chat"></div>
+    <div id="input-area">
+      <input type="text" id="user-input" placeholder="Deine Antwort ..." />
+      <button id="send-btn">Senden</button>
+    </div>
+  </div>
 
-/* Container-Design im Dark Mode */
-#chat-container {
-  width: 500px;
-  max-width: 90%;
-  background: #1e1e1e; /* etwas helleres Dunkel als Hintergrund */
-  border: 1px solid #333; /* dunkler Rahmen */
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); /* stärkerer Schatten */
-  display: flex;
-  flex-direction: column;
-}
+  <script>
+    // Beispiel-Fragen
+    const questions = [
+      "Was ist das Ziel deines Suchens?",
+      "Wann möchtest du das Ganze beginnen und wie lange soll es gehen?",
+      "Was ist der Status Quo bzw. was ist der Wissensstand deines Vorhabens oder deiner Projektteilnehmer?"
+    ];
+    
+    let currentQuestionIndex = 0;
+    let sessionData = {
+      timestamp: new Date().toISOString(),
+      responses: {}
+    };
 
-/* Chat-Bereich */
-#chat {
-  flex: 1;
-  padding: 30px;
-  overflow-y: auto;
-  border-bottom: 1px solid #333;
-}
+    const chatDiv = document.getElementById("chat");
+    const inputField = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
 
-/* Nachrichten-Styling */
-.message {
-  margin-bottom: 20px;
-  opacity: 0;
-}
-.bot {
-  font-size: 1.5em;  /* größere Schrift für die Fragen */
-  font-weight: bold;
-  line-height: 1.4;
-  color: #ffffff;
-}
-.user {
-  text-align: right;
-  color: #4fc3f7; /* helleres Blau als Kontrast */
-  font-size: 1.2em;
-}
+    // Funktion zum Hinzufügen einer Chat-Nachricht
+    function addMessage(text, sender) {
+      const msgDiv = document.createElement("div");
+      msgDiv.classList.add("message", sender);
+      msgDiv.innerText = text;
+      chatDiv.appendChild(msgDiv);
+      if (sender === "bot") {
+        msgDiv.classList.add("animate-slideIn");
+      } else {
+        msgDiv.style.opacity = "1";
+      }
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
 
-/* Eingabebereich */
-#input-area {
-  display: flex;
-  padding: 20px;
-  background: #181818;
-}
-#input-area input {
-  flex: 1;
-  padding: 12px;
-  border: 1px solid #333;
-  border-radius: 4px;
-  font-size: 1em;
-  background: #262626;
-  color: #e0e0e0;
-}
-#input-area button {
-  padding: 12px 20px;
-  margin-left: 10px;
-  border: none;
-  background: #4fc3f7; /* gleiche Farbe wie bei User-Text */
-  color: #121212;
-  border-radius: 4px;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-#input-area button:hover {
-  background: #38b0e3;
-}
+    function startChat() {
+      addMessage(questions[currentQuestionIndex], "bot");
+    }
 
-/* Typewriter-Effekt */
-@keyframes slideIn {
-  0% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-.animate-slideIn {
-  animation: slideIn 0.7s ease-out forwards;
-}
+    function processAnswer() {
+      const answer = inputField.value.trim();
+      if (!answer) return;
+      addMessage(answer, "user");
+
+      switch (currentQuestionIndex) {
+        case 0:
+          sessionData.responses.ziel = answer;
+          break;
+        case 1:
+          sessionData.responses.zeitplanung = answer;
+          break;
+        case 2:
+          sessionData.responses.status_quo = answer;
+          break;
+      }
+
+      inputField.value = "";
+      currentQuestionIndex++;
+
+      if (currentQuestionIndex < questions.length) {
+        setTimeout(() => {
+          addMessage(questions[currentQuestionIndex], "bot");
+        }, 500);
+      } else {
+        addMessage("Vielen Dank! Deine Antworten wurden gespeichert.", "bot");
+        saveSessionData(sessionData);
+      }
+    }
+
+    function saveSessionData(data) {
+      console.log("Session gespeichert:", data);
+      // Hier wird normalerweise ein API-Aufruf gemacht
+    }
+
+    sendBtn.addEventListener("click", processAnswer);
+    inputField.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") processAnswer();
+    });
+
+    startChat();
+  </script>
+</body>
+</html>
