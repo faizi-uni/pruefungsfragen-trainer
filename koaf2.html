@@ -2,36 +2,32 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Fragebogen mit Login & Typewriter-Effekt</title>
+  <title>Fragebogen mit Login & Firebase</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Raleway Light von Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300&display=swap" rel="stylesheet">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore-compat.js"></script>
   <style>
-    /* Basis-Dark-Mode mit Raleway */
-    body { font-family: 'Raleway', sans-serif; background: #121212; margin: 0; padding: 0;
-           color: #e0e0e0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .container { width: 500px; max-width: 90%; background: #1e1e1e; border: 1px solid #333;
-                 border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.7); padding: 30px; text-align: center; }
-    /* Login-Bereich */
+    body { font-family: 'Raleway', sans-serif; background: #121212; margin: 0; padding: 0; color: #e0e0e0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .container { width: 500px; max-width: 90%; background: #1e1e1e; border: 1px solid #333; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.7); padding: 30px; text-align: center; }
+    /* Login-Container */
     #chat-container { display: none; flex-direction: column; height: 80vh; }
     #chat { flex: 1; overflow-y: auto; border-bottom: 1px solid #333; text-align: left; margin-bottom: 10px; }
-    /* Nachrichten */
     .message { margin: 10px 0; }
     .bot { font-size: 1.5em; font-weight: 300; }
     .user { text-align: right; font-size: 1.2em; color: #4fc3f7; }
-    /* Eingabebereich */
     #input-area { display: flex; margin-top: 10px; }
     #input-area input { flex: 1; padding: 10px; border: 1px solid #333; border-radius: 4px; background: #262626; color: #e0e0e0; }
-    #input-area button, #submit-btn, button { padding: 10px 15px; border: none; border-radius: 4px;
-                                               background: #4fc3f7; color: #121212; cursor: pointer; }
+    #input-area button, #submit-btn, button { padding: 10px 15px; border: none; border-radius: 4px; background: #4fc3f7; color: #121212; cursor: pointer; }
     #submit-btn { display: none; margin-top: 15px; }
     button:hover { background: #38b0e3; }
-    /* Kleinere Abstände für Fehlermeldung */
     #login-error { color: #ff5555; margin-top: 10px; display: none; }
   </style>
 </head>
 <body>
-  <!-- Login-Container -->
+  <!-- Login-Bereich -->
   <div id="login-container" class="container">
     <h2>Fragebogen-Zugang</h2>
     <p>Bitte Passwort eingeben:</p>
@@ -41,7 +37,7 @@
     <div id="login-error">Falsches Passwort!</div>
   </div>
 
-  <!-- Fragebogen-Container -->
+  <!-- Fragebogen-Bereich -->
   <div id="chat-container" class="container">
     <div id="chat"></div>
     <div id="input-area">
@@ -52,11 +48,21 @@
   </div>
 
   <script>
-    // Konfiguration
-    const CORRECT_PASSWORD = "geheim123"; // Passwort, das Zugriff gewährt
-    const endpoint = "https://script.google.com/macros/s/YOUR_WEB_APP_ID/exec"; // Ersetze durch deinen Endpunkt
+    // --- Firebase-Konfiguration (ersetze die folgenden Werte durch deine Firebase-Projektwerte) ---
+    const firebaseConfig = {
+      apiKey: "DEINE_API_KEY",
+      authDomain: "DEIN-PROJEKT.firebaseapp.com",
+      projectId: "DEIN-PROJEKT",
+      storageBucket: "DEIN-PROJEKT.appspot.com",
+      messagingSenderId: "DEINE_SENDER_ID",
+      appId: "DEINE_APP_ID"
+    };
+    // Firebase initialisieren und Firestore einrichten
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    // DOM-Elemente
+    // --- Variablen und DOM-Elemente ---
+    const CORRECT_PASSWORD = "geheim123";
     const loginContainer = document.getElementById("login-container"),
           chatContainer = document.getElementById("chat-container"),
           loginBtn = document.getElementById("login-btn"),
@@ -67,7 +73,6 @@
           sendBtn = document.getElementById("send-btn"),
           submitBtn = document.getElementById("submit-btn");
 
-    // Fragen und Sessionsdaten
     const questions = [
       "Was ist das Ziel deines Suchens?",
       "Wann möchtest du das Ganze beginnen und wie lange soll es gehen?",
@@ -76,7 +81,7 @@
     let currentQuestionIndex = 0;
     const sessionData = { timestamp: new Date().toISOString(), responses: {} };
 
-    // Login-Logik
+    // --- Login-Logik ---
     loginBtn.addEventListener("click", () => {
       if (passwordInput.value === CORRECT_PASSWORD) {
         loginContainer.style.display = "none";
@@ -87,7 +92,7 @@
       }
     });
 
-    // Typewriter-Effekt: Zeigt Text Zeichen für Zeichen an
+    // --- Typewriter-Effekt ---
     function typeWriter(target, text, idx = 0, callback) {
       if (idx < text.length) {
         target.innerHTML += text.charAt(idx);
@@ -95,7 +100,7 @@
       } else if (callback) callback();
     }
 
-    // Zeigt die nächste Frage im Chat
+    // --- Frage anzeigen ---
     function showNextQuestion() {
       if (currentQuestionIndex < questions.length) {
         const msg = document.createElement("div");
@@ -107,7 +112,7 @@
       }
     }
 
-    // Fügt eine Nachricht für den Nutzer sofort ein
+    // --- User-Antwort hinzufügen ---
     function addUserMessage(text) {
       const msg = document.createElement("div");
       msg.className = "message user";
@@ -116,7 +121,7 @@
       chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
-    // Verarbeitet die Nutzerantworten und speichert sie
+    // --- Antwort verarbeiten ---
     function processAnswer() {
       const answer = inputField.value.trim();
       if (!answer) return;
@@ -129,18 +134,16 @@
       setTimeout(showNextQuestion, 500);
     }
 
-    // Übermitteln der gesamten Session-Daten
+    // --- Daten in Firebase speichern ---
     submitBtn.addEventListener("click", () => {
       addUserMessage("Vielen Dank! Deine Antworten wurden übermittelt.");
-      fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" },
-                         body: JSON.stringify(sessionData) })
-        .then(response => response.json())
-        .then(result => console.log("Gespeichert:", result))
+      db.collection("sessions").add(sessionData)
+        .then(docRef => console.log("Gespeichert, ID:", docRef.id))
         .catch(err => console.error("Speicherfehler:", err));
       submitBtn.disabled = true;
     });
 
-    // Event-Listener für Antwort-Eingabe
+    // --- Event-Listener für Antwort-Eingabe ---
     sendBtn.addEventListener("click", processAnswer);
     inputField.addEventListener("keypress", e => { if (e.key === "Enter") processAnswer(); });
   </script>
