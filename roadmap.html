@@ -13,18 +13,27 @@
       font-family: Arial, sans-serif;
       background: #fdf5e6; /* Fallback-Farbe */
     }
-    /* Die Canvas-Elemente als Hintergrundschicht */
+    /* Canvas-Elemente für dynamischen Hintergrund und Roadmap */
     #bgCanvas, #roadmapCanvas {
       position: absolute;
       top: 0;
       left: 0;
     }
-    /* Container für interaktive Marker */
+    /* Damit die Elemente in der richtigen Reihenfolge liegen */
+    #bgCanvas { z-index: 1; }
+    #roadmapCanvas { z-index: 2; }
+    /* Container für die interaktiven Marker */
     #markersContainer {
       position: absolute;
       top: 0;
       left: 0;
-      pointer-events: none;
+      z-index: 3;
+      pointer-events: auto;
+    }
+    /* Detail-Popup für Meilensteine */
+    #detail {
+      position: absolute;
+      z-index: 4;
     }
     /* Marker-Styles – als interaktive Schatz-Symbole */
     .marker {
@@ -39,15 +48,12 @@
       align-items: center;
       justify-content: center;
       user-select: none;
-      pointer-events: all;
       transition: transform 0.3s, box-shadow 0.3s;
     }
-    /* Hover-Effekt: größer und mit Leuchteffekt */
     .marker:hover {
       transform: scale(1.2);
       box-shadow: 0 0 15px rgba(139, 69, 19, 0.8);
     }
-    /* Beim Klick wird die Marker-Schaltfläche kurz pulsierend animiert */
     .marker.active {
       animation: pulse 0.6s ease;
     }
@@ -56,9 +62,8 @@
       50% { transform: scale(1.4); }
       100% { transform: scale(1); }
     }
-    /* Detail-Popup im Stil einer alten Schriftrolle mit sanften Transitionen */
+    /* Detail-Popup im Stil einer alten Schriftrolle */
     .milestone-detail {
-      position: absolute;
       background: rgba(255, 248, 220, 0.95);
       padding: 10px 15px;
       border: 2px solid #8B4513;
@@ -81,11 +86,11 @@
 <body>
   <!-- Dynamischer Hintergrund (Canvas) -->
   <canvas id="bgCanvas"></canvas>
-  <!-- Canvas für die gezeichnete Roadmap -->
+  <!-- Roadmap-Canvas -->
   <canvas id="roadmapCanvas"></canvas>
-  <!-- Container für die Marker -->
+  <!-- Container für Marker -->
   <div id="markersContainer"></div>
-  <!-- Popup zur Anzeige der Meilensteindetails -->
+  <!-- Popup zur Anzeige der Meilenstein-Details -->
   <div id="detail" class="milestone-detail"></div>
 
   <script>
@@ -99,12 +104,13 @@
     const markersContainer = document.getElementById('markersContainer');
     const detailDiv = document.getElementById('detail');
 
-    // Anpassung der Canvas-Größen an das Fenster
+    // Größenanpassung der Canvas-Elemente an Fenstergröße
     function resizeCanvases() {
       bgCanvas.width = window.innerWidth;
       bgCanvas.height = window.innerHeight;
       roadmapCanvas.width = window.innerWidth;
       roadmapCanvas.height = window.innerHeight;
+      recalcMarkerPositions(); // Neuberechnung der Markerpositionen
       drawBackground();
       drawRoadmap();
     }
@@ -117,18 +123,18 @@
     let gradientOffset = 0;
     function drawBackground() {
       bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-      // Erzeugung eines linearen Farbverlaufs, der langsam verschiebt
-      let grad = bgCtx.createLinearGradient(gradientOffset, 0, bgCanvas.width + gradientOffset, bgCanvas.height);
-      grad.addColorStop(0, "#fdf5e6"); // Helles Pergament
-      grad.addColorStop(1, "#f4e1c1"); // Etwas dunkler
+      // Erzeugung eines langsamen, beweglichen Farbverlaufs
+      const grad = bgCtx.createLinearGradient(gradientOffset, 0, bgCanvas.width + gradientOffset, bgCanvas.height);
+      grad.addColorStop(0, "#fdf5e6");
+      grad.addColorStop(1, "#f4e1c1");
       bgCtx.fillStyle = grad;
       bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
-      // Hinzufügen von feinen "Noise"-Punkten für den gealterten Effekt
+      // Hinzufügen feiner "Noise"-Punkte
       for (let i = 0; i < 500; i++) {
-        let x = Math.random() * bgCanvas.width;
-        let y = Math.random() * bgCanvas.height;
-        let alpha = Math.random() * 0.05;
-        bgCtx.fillStyle = "rgba(0,0,0," + alpha + ")";
+        const x = Math.random() * bgCanvas.width;
+        const y = Math.random() * bgCanvas.height;
+        const alpha = Math.random() * 0.05;
+        bgCtx.fillStyle = `rgba(0,0,0,${alpha})`;
         bgCtx.fillRect(x, y, 1, 1);
       }
     }
@@ -140,10 +146,8 @@
     animateBackground();
 
     /***************************************************
-     * Markerpositionen berechnet mit Fibonacci-/     *
-     * Goldener-Schnitt-Prinzipien (organischer Pfad)   *
+     * Definition der Meilensteine und Markerpositionen *
      ***************************************************/
-    // Definition der Meilensteine
     const milestones = [
       { date: "01.01.2000", headline: "Geburt", text: "Geboren unter Abenteuern" },
       { date: "15.03.2005", headline: "Schulabschluss", text: "Erste Etappe erfolgreich beendet" },
@@ -158,23 +162,30 @@
     ];
     const markerPositions = [];
     const numMilestones = milestones.length;
-    const marginX = 100;
-    const widthAvailable = window.innerWidth - 2 * marginX;
-    const step = widthAvailable / (numMilestones - 1);
-    const centerY = window.innerHeight / 2;
-    const amplitude = window.innerHeight / 6;
-    const phi = 1.618;
-    for (let i = 0; i < numMilestones; i++) {
-      let x = marginX + i * step;
-      let yOffset = amplitude * Math.sin(i * (Math.PI / 4)) * (1 / Math.pow(phi, i % 3));
-      let y = centerY + yOffset;
-      markerPositions.push({ x, y });
+
+    // Funktion zur Neuberechnung der Markerpositionen basierend auf Fenstergröße
+    function recalcMarkerPositions() {
+      // Leere das Array vor der Neuberechnung
+      markerPositions.length = 0;
+      const marginX = 100;
+      const widthAvailable = window.innerWidth - 2 * marginX;
+      const step = widthAvailable / (numMilestones - 1);
+      const centerY = window.innerHeight / 2;
+      const amplitude = window.innerHeight / 6;
+      const phi = 1.618; // Goldener Schnitt
+      for (let i = 0; i < numMilestones; i++) {
+        const x = marginX + i * step;
+        const yOffset = amplitude * Math.sin(i * (Math.PI / 4)) * (1 / Math.pow(phi, i % 3));
+        const y = centerY + yOffset;
+        markerPositions.push({ x, y });
+      }
     }
 
     /********************************************
      * Zeichnen der Roadmap als organischer Pfad *
      ********************************************/
     function drawRoadmap() {
+      // Canvas zurücksetzen
       roadmapCtx.clearRect(0, 0, roadmapCanvas.width, roadmapCanvas.height);
       roadmapCtx.lineWidth = 8;
       roadmapCtx.strokeStyle = "red";
@@ -184,30 +195,31 @@
       if (markerPositions.length > 0) {
         roadmapCtx.moveTo(markerPositions[0].x, markerPositions[0].y);
       }
+      // Pfad mit quadratischen Kurven zwischen den Markern zeichnen
       for (let i = 1; i < markerPositions.length; i++) {
-        let prev = markerPositions[i - 1];
-        let current = markerPositions[i];
-        let cpX = (prev.x + current.x) / 2;
-        let cpY = (prev.y + current.y) / 2;
+        const prev = markerPositions[i - 1];
+        const current = markerPositions[i];
+        const cpX = (prev.x + current.x) / 2;
+        const cpY = (prev.y + current.y) / 2;
         roadmapCtx.quadraticCurveTo(prev.x, prev.y, cpX, cpY);
       }
-      let last = markerPositions[markerPositions.length - 1];
+      const last = markerPositions[markerPositions.length - 1];
       roadmapCtx.lineTo(last.x, last.y);
       roadmapCtx.stroke();
 
-      // Platzierung der Marker als interaktive Elemente
+      // Marker platzieren
       markersContainer.innerHTML = "";
       for (let i = 0; i < markerPositions.length; i++) {
         const markerData = milestones[i];
         const pos = markerPositions[i];
         const markerElem = document.createElement('div');
         markerElem.className = 'marker';
+        // Marker zentrieren (40px Breite/Höhe)
         markerElem.style.left = (pos.x - 20) + "px";
         markerElem.style.top = (pos.y - 20) + "px";
         markerElem.innerHTML = "&#9875;";  // Anker-Symbol
         markerElem.addEventListener('click', (e) => {
           e.stopPropagation();
-          // Füge die aktive Klasse zum Triggern der pulse-Animation hinzu
           markerElem.classList.add('active');
           setTimeout(() => { markerElem.classList.remove('active'); }, 600);
           showDetail(markerData, pos);
@@ -221,17 +233,16 @@
      *******************************************/
     function showDetail(data, pos) {
       detailDiv.innerHTML = "<strong>" + data.headline + "</strong><br><small>" + data.date + "</small><br><p>" + data.text + "</p>";
-      // Positioniere das Popup nahe dem Marker, leicht versetzt
+      // Positionierung des Popups (leicht versetzt vom Marker)
       detailDiv.style.left = (pos.x + 10) + "px";
       detailDiv.style.top = (pos.y - 80) + "px";
       detailDiv.classList.add('visible');
     }
-    // Schließe das Popup, wenn außerhalb geklickt wird
     document.addEventListener('click', () => {
       detailDiv.classList.remove('visible');
     });
 
-    // Initiales Zeichnen der Roadmap
+    // Initiales Zeichnen der Roadmap (Markerpositionen wurden bereits in recalcMarkerPositions berechnet)
     drawRoadmap();
   </script>
 </body>
